@@ -1,86 +1,72 @@
-## Project setup
+# PaaS — Push-to-Deploy Platform
 
-```bash
-$ npm install
+**A self-hosted, Heroku-style platform-as-a-service.** Connect a GitHub repository and the platform detects the framework, builds a Docker image (streaming the build logs), deploys the container to a live subdomain with automatic TLS, supports custom domains, and meters usage for billing.
+
+This repository is the **NestJS backend** that orchestrates the whole pipeline. The dashboard lives in [paas--frontend](https://github.com/nahom4/paas--frontend).
+
+![Landing page](docs/screenshots/landing.png)
+
+---
+
+## What it does
+
+```
+Connect repo ─▶ Detect framework ─▶ Build image ─▶ Run container ─▶ Subdomain + TLS ─▶ Meter & bill
+ (GitHub +        (Angular/Vue/      (Docker, live    (start/stop/     (auto domain +     (usage-based
+  webhooks)        Node/Python)       build logs)      delete)          custom domains)    billing)
 ```
 
-## Compile and run the project
+- **Git-based deploys** — connect a GitHub repo and deploy on push via webhooks.
+- **Framework auto-detection** — inspects the project and generates an appropriate Dockerfile / compose config (Angular, Vue, Node, Python, …).
+- **Containerized builds** — builds and pushes Docker images, with **live build and runtime log streaming** to the UI.
+- **Lifecycle management** — start, stop, redeploy, and delete running containers.
+- **Domains & TLS** — provisions a per-project subdomain and supports custom domains, with automatic Let's Encrypt certificates.
+- **Usage metering & billing** — tracks resource usage, estimates cost, and exposes payment status (active / overdue).
+- **Auth** — OAuth-based sign-in.
 
-```bash
-# development
-$ npm run start
+## Screenshots
 
-# watch mode
-$ npm run start:dev
+| Dashboard — projects, usage & billing | Project detail — deployments & domains |
+|---|---|
+| ![Dashboard](docs/screenshots/dashboard.png) | ![Project detail](docs/screenshots/project-detail.png) |
 
-# production mode
-$ npm run start:prod
+**Live Docker build logs**
+
+![Build logs](docs/screenshots/build-logs.png)
+
+## Architecture
+
+The backend is organized around a deploy pipeline plus supporting resources:
+
+```
+src/
+  core/
+    framework-detector/     detect the project's framework and pick a build strategy
+    frame-works/            per-framework Dockerfile/compose generators (angular, vue, python, …)
+    container-setup/        build images, run/manage containers, stream build & runtime logs
+    usage-metrics/          resource metrics + cost calculation
+    client/                 deploy event listeners / orchestration
+  resources/
+    repositories/           connect GitHub repos + handle push webhooks
+    projects/               project CRUD and lifecycle
+    dns/                    subdomain + custom-domain management (queued jobs)
+    payment/                usage-based billing
+    oauth/                  authentication
+  infrastructure/database/  Prisma repositories
 ```
 
-## Run tests
+## Tech stack
+
+**NestJS** · **Prisma** · **PostgreSQL** · **Redis** (job queues) · **Docker** · **Let's Encrypt / ACME** · React/TypeScript dashboard
+
+## Running locally
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-## Contribution Guidelines
-## 1. Clone the Repository
-Clone the repository to your local machine:
-```bash
-git clone https://github.com/your-team/repository-name.git
-cd repository-name
+npm install
+npx prisma migrate dev
+npm run start:dev
 ```
 
-## 2. Create a New Branch
-Always create a new branch for your changes:
-```bash
-git checkout -b feature/your-branch-name
-```
-Use a descriptive branch name that reflects the task or feature, e.g., `feature/login-page` or `bugfix/fix-login-error`.
+Requires a local Docker daemon (the platform shells out to Docker to build and run project images), PostgreSQL, and Redis. See `docker-compose.yml` for the supporting services.
 
-## 3. Make Your Changes
-Implement your changes in the appropriate files. Ensure your work aligns with the project's coding standards and conventions.
-
-## 4. Commit Your Changes
-Stage and commit your changes with a clear and descriptive commit message:
-```bash
-git add .
-git commit -m "Descriptive message about your changes"
-```
-
-## 5. Sync With the Main Branch
-Before pushing your branch, ensure it's up to date with the latest changes from the main branch:
-```bash
-git fetch origin
-git checkout main
-git pull origin main
-git checkout feature/your-branch-name
-git merge main
-```
-Resolve any merge conflicts, if necessary.
-
-## 6. Push Your Changes
-Push your branch to the remote repository:
-```bash
-git push origin feature/your-branch-name
-```
-
-## 7. Create a Pull Request (PR)
-1. Go to the repository on GitHub.
-2. Navigate to the **Pull Requests** tab and click the **New Pull Request** button.
-3. Select your branch as the source branch and `main` as the target branch.
-4. Add a clear and concise title and description for your PR, explaining what you’ve changed and why.
-
-## 8. Assign a Reviewer and Notify Them
-1. Assign a reviewer to your PR using GitHub's **Assignees** feature.
-2. Notify the reviewer via Telegram.
-
-## 9. Respond to Feedback
-Address any feedback provided by the reviewer promptly. Once all changes are approved, the reviewer will merge the PR into the main branch.
-
+> **Note:** This was a team project; I (@nahom4) was the primary author (~76% of commits), owning the build/deploy pipeline, container orchestration, DNS/TLS, and billing.
