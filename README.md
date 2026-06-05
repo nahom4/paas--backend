@@ -69,4 +69,3 @@ npm run start:dev
 
 Requires a local Docker daemon (the platform shells out to Docker to build and run project images), PostgreSQL, and Redis. See `docker-compose.yml` for the supporting services.
 
-> **Note:** This was a team project; I (@nahom4) was the primary author (~76% of commits), owning the build/deploy pipeline, container orchestration, DNS/TLS, and billing.
